@@ -433,6 +433,9 @@ Short Answer Question:
         },
         "raw_text": response_text
     })
+@app.route("/")
+def health():
+    return jsonify({"status": "ok", "message": "Dhamm AI backend is running."})
 
 if __name__ == '__main__':
     app.run(debug=True)
