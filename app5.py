@@ -387,12 +387,25 @@ def toggle_chunks():
     show_chunks = data['show_chunks']
     return jsonify({"message": f"Show chunks set to {show_chunks}", "show_chunks": show_chunks})
 @app.route("/api/generate-questions", methods=["POST"])
-def generate_questions():
-    data = request.get_json()
-    course_outcome = data.get("course_outcome")
-    bloom_level = data.get("bloom_level")
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
 
-    prompt = f"""You are an expert question generator.
+@app.route("/api/generate-questions", methods=["POST"])
+def generate_questions():
+    try:
+        data = request.get_json()
+        course_outcome = data.get("course_outcome")
+        bloom_level = data.get("bloom_level")
+
+        if not course_outcome or not bloom_level:
+            return jsonify({"error": "Missing course_outcome or bloom_level"}), 400
+
+        # Ensure API key is loaded
+        google_api_key = os.getenv("GOOGLE_API_KEY")
+        if not google_api_key:
+            return jsonify({"error": "GOOGLE_API_KEY not set"}), 403
+
+        prompt = f"""You are an expert question generator.
 Based on the following course outcome and Bloom level, generate:
 - One objective MCQ with 4 options (A-D)
 - One short answer subjective question
@@ -411,28 +424,32 @@ D. ...
 Short Answer Question:
 ..."""
 
-    model = ChatGoogleGenerativeAI(model="gemini-pro")
-    response = model.invoke(prompt)
-    response_text = response.content
+        model = ChatGoogleGenerativeAI(model="gemini-pro", api_key=google_api_key)
+        response = model.invoke(prompt)
+        response_text = response.content
 
-    lines = response_text.split('\\n')
-    options = [line.strip() for line in lines if line.strip().startswith(("A.", "B.", "C.", "D."))]
-    subjective_q = next((line for line in lines if "Short Answer Question" in line), "")
-    subjective_index = lines.index(subjective_q) + 1 if subjective_q in lines else -1
-    subjective = lines[subjective_index] if subjective_index < len(lines) else "N/A"
+        lines = response_text.split('\n')
+        options = [line.strip() for line in lines if line.strip().startswith(("A.", "B.", "C.", "D."))]
+        subjective_q = next((line for line in lines if "Short Answer Question" in line), "")
+        subjective_index = lines.index(subjective_q) + 1 if subjective_q in lines else -1
+        subjective = lines[subjective_index] if subjective_index < len(lines) else "N/A"
 
-    return jsonify({
-        "bloom_level": bloom_level,
-        "course_outcome": course_outcome,
-        "questions": {
-            "objective": {
-                "question": "Here are the generated questions:",
-                "options": options
+        return jsonify({
+            "bloom_level": bloom_level,
+            "course_outcome": course_outcome,
+            "questions": {
+                "objective": {
+                    "question": "Here are the generated questions:",
+                    "options": options
+                },
+                "subjective": subjective
             },
-            "subjective": subjective
-        },
-        "raw_text": response_text
-    })
+            "raw_text": response_text
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/")
 def health():
     return jsonify({"status": "ok", "message": "Dhamm AI backend is running."})
