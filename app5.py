@@ -59,7 +59,6 @@ def get_vectorstore():
 
 # Generate custom prompt
 def generate_prompt(cognitive_level, sentiment):
-    # Base + Bloom's logic skipped for brevity
     return PromptTemplate(
         input_variables=["context", "question"],
         template="""You are a helpful assistant. Context: {context}\nQuestion: {question}\nAnswer: """
