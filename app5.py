@@ -61,12 +61,12 @@ def get_vectorstore():
 def generate_prompt(cognitive_level, sentiment):
     return PromptTemplate(
         input_variables=["context", "question"],
-        template="""You are a helpful assistant. Context: {context}\nQuestion: {question}\nAnswer: """
+        template="""You are a helpful assistant. ONLY use the context below to answer.\n\nContext: {context}\n\nQuestion: {question}\n\nAnswer:"""
     )
 
 # Get chat chain
 def get_conversation_chain(vectorstore, memory, level="understand", sentiment="neutral"):
-    llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY)
+    llm = ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, temperature=0.0)
     prompt = generate_prompt(level, sentiment)
     return ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -90,9 +90,20 @@ def lookup_chunks(query, vectorstore):
 
 # Handle question
 def handle_userinput(question, conversation):
-    context = "\n\n".join(lookup_chunks(question, vectorstore))
+    retrieved_chunks = lookup_chunks(question, vectorstore)
+    context = "\n\n".join(retrieved_chunks)
+
+    if not context.strip():
+        return {
+            "answer": "❌ Sorry, I couldn't find any relevant material in your transcript to answer that.",
+            "context": ""
+        }
+
     response = conversation({"question": question})
-    return response.get("answer", ""), context
+    return {
+        "answer": response.get("answer", ""),
+        "context": context
+    }
 
 # Initialize conversation
 vectorstore = get_vectorstore()
@@ -107,11 +118,8 @@ def chat():
     if not question.strip():
         return jsonify({"error": "Missing question"}), 400
     try:
-        answer, context = handle_userinput(question, conversation)
-        return jsonify({
-            "answer": answer,
-            "context": context
-        })
+        result = handle_userinput(question, conversation)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
