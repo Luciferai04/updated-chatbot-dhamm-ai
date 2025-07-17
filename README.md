@@ -84,13 +84,13 @@ cd /path/to/Dhamm_AI_Chatbot-main
 source venv/bin/activate
 
 # Run the Flask application (port 8000)
-python3 app5.py
+python3 updatedapp.py
 ```
 
 #### macOS-specific Note
 On macOS, port 5000 is commonly used by AirPlay Receiver. If you encounter a "Port 5000 is in use" error, you have two options:
 
-1. Edit `app5.py` to use a different port (recommended):
+1. Edit `updatedapp.py` to use a different port (recommended):
    ```python
    # Change this line at the bottom of app5.py
    app.run(host='0.0.0.0', port=8000, debug=False)
@@ -106,7 +106,7 @@ To run the application in the background:
 ```bash
 cd /path/to/Dhamm_AI_Chatbot-main
 source venv/bin/activate
-nohup python3 app5.py > app.log 2>&1 &
+nohup python3 updatedapp.py > app.log 2>&1 &
 ```
 
 You can check the logs with:
@@ -119,10 +119,10 @@ For production use, use Gunicorn:
 
 ```bash
 # Basic configuration
-gunicorn app5:app --bind 0.0.0.0:8000
+gunicorn updatedapp:app --bind 0.0.0.0:8000
 
 # Recommended configuration for better performance
-gunicorn app5:app --bind 0.0.0.0:8000 --workers 4 --worker-class gevent --timeout 120 --log-level info
+gunicorn updatedapp:app --bind 0.0.0.0:8000 --workers 4 --worker-class gevent --timeout 120 --log-level info
 ```
 
 To run the server in the background (recommended for production):
@@ -311,7 +311,7 @@ This provides a basic UI to interact with the chatbot API.
 **Solution**:
 1. On macOS or some Linux distributions, use `python3` instead of `python`:
    ```bash
-   python3 app5.py
+   python3 updatedapp.py
    ```
 
 ### Module Not Found Errors
@@ -438,7 +438,7 @@ export default api;
 
 #### 4. Update CORS Settings in Flask Backend
 
-Update the CORS configuration in `app5.py` to allow requests from your React frontend:
+Update the CORS configuration in `updatedapp.py` to allow requests from your React frontend:
 
 ```python
 # Import CORS
